@@ -57,6 +57,7 @@ module RubyProjection
 			v.call(object.public_send(k))
 		elsif v.is_a?(Array)
 			hsh = v.last
+			hsh = {} unless hsh.is_a?(Hash)
 			x = object.public_send(hsh[:from] || k, *hsh[:with])
 			v.first.to_proc.call(x)
 		else
