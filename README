@@ -1,0 +1,81 @@
+RubyProjection is a library to enable easily creating restricted output data from ruby objects.  It can be used as a standalone library or a Rails template language.
+
+== As a Standalone Library ==
+
+The core procedure is `RubyProjection.proj`, which takes as its first argument either an object to project over, or an Enumerable of objects to project over.  If objects are specifically Hash, their keys will be treated as methods for the purposes of the descriptions below.
+
+=== Simple Projection ===
+
+{{{
+RubyProjection.proj @object,
+	:field1,
+	:field2
+}}}
+
+Will result in a hash where the keys :field1 and :field2 are filled with the result of calling the field1 and field2 methods on @object.
+
+{{{
+RubyProjection.proj [@object1, @object2],
+	:field1,
+	:field2
+}}}
+
+Will result in an array of hases where the keys :field2 and :field2 of each are filled with the result of calling the field2 and field2 methods on the respective objects.
+
+=== Renaming Projection ===
+
+{{{
+RubyProjection.proj @object,
+	new_field_name: :field1,
+	awesome_name: :field2
+}}}
+
+Will result in a hash where the keys :new_field_name and :awesome_name are filled with the result of calling the field1 and field2 methods on @object.
+
+=== Mapping Projection ===
+
+{{{
+RubyProjection.proj @object,
+	field1: lambda {|x| x + 1 }
+}}}
+
+Will result in a hash where the key :field1 is filled with the result of calling field1 on @object and passing that value to the given lambda.
+
+=== Nested Projection ===
+
+{{{
+RubyProjection.proj @object,
+    field3: RubyProjection.nested(:some_field)
+}}}
+
+The nested helper just produces a callable to be used with any mapping projection.  This example will result in a hash where the key :field3 is filled with a hash (or enumerable) of the result of projecting :some_field out of the result of calling the field3 method on @object.
+
+=== Mapping and Renaming Projection ===
+
+{{{
+RubyProjection.proj @object,
+	new_field_name: [lambda {|x| x + 1}, from: :field1]
+}}}
+
+Will result in a hash where the key :new_field_name is filled with the result of calling field1 on @object and passing the value to the given lambda.
+
+=== Projecting Methods That Take Arguments ===
+
+{{{
+RubyProjection.proj @object,
+	field4: [with: [1,2]]
+}}}
+
+Will result in a hash where the key :field4 is filled with the result of calling the field4 method on @object with the arguments 1 and 2.
+
+== As a Rails Template ==
+
+The gem will register a new template extension `.prb` that simply evalutates the contents of a template file as ruby code (with the RubyProjection module included, so that proj and nested are in scope without qualification) and render the result using .to_#{format} for whatever format is being requested (usually JSON or XML).  This allows template files like the following:
+
+{{{
+proj @object,
+	:thing2,
+	:thing3
+}}}
+
+Also, the `nested` helper can be passed a path to another template to use, instead of just a direct set of projection settings, and also supports accepting extra locals (either as direct hash arguments, or by passing the hash arguments `locals`) so that `nested` can be used the way Rails normally would do partials.
